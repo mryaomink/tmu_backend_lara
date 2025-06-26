@@ -53,7 +53,9 @@ class AuthController extends Controller
     /**
      * Login untuk semua jenis user, sekarang memuat data profil.
      */
-    public function login(Request $request)
+   // app/Http/Controllers/Api/V1/AuthController.php
+
+public function login(Request $request)
 {
     $request->validate([
         'identifier' => 'required|string',
@@ -96,6 +98,10 @@ class AuthController extends Controller
             'email' => $user->email,
             'username' => $user->username,
             'role' => $role,
+            // =======================================================
+            // ==> TAMBAHKAN SATU BARIS INI UNTUK MEMPERBAIKINYA <==
+            'permissions' => $user->getAllPermissions()->pluck('name'),
+            // =======================================================
         ]
     ]);
 }

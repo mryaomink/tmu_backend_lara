@@ -13,6 +13,8 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable, HasRoles; // <-- Gunakan trait HasRoles
 
+    
+
     /**
      * Atribut yang dapat diisi secara massal.
      *

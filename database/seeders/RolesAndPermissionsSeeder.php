@@ -2,74 +2,79 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class RolesAndPermissionsSeeder extends Seeder
 {
-    /**
-     * Jalankan seeder database.
-     */
     public function run(): void
     {
-        // Reset cached roles and permissions
+        // Hapus cache permission
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // Buat semua peran yang dibutuhkan
-        $superAdminRole = Role::create(['name' => 'super admin']);
-        $adminRole = Role::create(['name' => 'admin']);
-        $petugasRole = Role::create(['name' => 'petugas']);
-        $agenRole = Role::create(['name' => 'agen']);
-        Role::create(['name' => 'pelanggan']); // Tidak perlu variabel karena tidak ada izin khusus
+        // Daftar permission yang akan dibuat
+        $permissions = [
+            'manage users',
+            'manage schedules',
+            'manage ships',
+            'manage routes',
+            'manage ports',
+            'manage news',
+            'manage manifest',
+            'manage refund',
+            'scan ticket',
+        ];
 
-        // Buat beberapa izin (opsional tapi praktik yang baik)
-        $manageUsersPermission = Permission::create(['name' => 'manage users']);
-        $manageSchedulesPermission = Permission::create(['name' => 'manage schedules']);
-        $scanTicketPermission = Permission::create(['name' => 'scan ticket']);
-        $viewManifestPermission = Permission::create(['name' => 'view manifest']);
+        // Buat permission jika belum ada
+        foreach ($permissions as $permission) {
+            Permission::firstOrCreate([
+                'name' => $permission,
+                'guard_name' => 'web',
+            ]);
+        }
 
-        // Berikan izin ke peran
-        $superAdminRole->givePermissionTo($manageUsersPermission);
-        $superAdminRole->givePermissionTo($manageSchedulesPermission);
-        $superAdminRole->givePermissionTo($viewManifestPermission);
+        // Buat role-role utama
+        $superAdminRole = Role::firstOrCreate(['name' => 'super admin', 'guard_name' => 'web']);
+        $adminRole = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
+        $petugasRole = Role::firstOrCreate(['name' => 'petugas', 'guard_name' => 'web']);
+        $agenRole = Role::firstOrCreate(['name' => 'agen', 'guard_name' => 'web']);
+        $pelangganRole = Role::firstOrCreate(['name' => 'pelanggan', 'guard_name' => 'web']);
 
-        $adminRole->givePermissionTo($manageSchedulesPermission);
-        $adminRole->givePermissionTo($viewManifestPermission);
+        // Sinkronisasi permission untuk setiap role
+        $superAdminRole->syncPermissions(Permission::all());
 
-        $petugasRole->givePermissionTo($scanTicketPermission);
-        $petugasRole->givePermissionTo($viewManifestPermission);
-        
-        // Buat pengguna Super Admin default
-        $superAdminUser = User::create([
-            'name' => 'Super Admin',
-            'username' => 'superadmin', // Username untuk login
-            'email' => 'superadmin@ferry.com',
-            'password' => Hash::make('password'), // Ganti dengan password yang aman
+        $adminRole->syncPermissions([
+            'manage schedules',
+            'manage ships',
+            'manage routes',
+            'manage ports',
+            'manage news',
+            'manage manifest',
+            'manage refund',
         ]);
-        
-        // Berikan peran 'super admin' ke pengguna tersebut
-        $superAdminUser->assignRole($superAdminRole);
 
-        // Buat pengguna Admin default (opsional)
-        $adminUser = User::create([
-            'name' => 'Admin',
-            'username' => 'admin',
-            'email' => 'admin@ferry.com',
-            'password' => Hash::make('password'),
+        $petugasRole->syncPermissions([
+            'scan ticket',
+            'manage manifest',
         ]);
-        $adminUser->assignRole($adminRole);
 
-        // Buat pengguna Petugas default (opsional)
-        $petugasUser = User::create([
-            'name' => 'Petugas Lapangan',
-            'username' => 'petugas01',
-            'email' => 'petugas01@ferry.com',
-            'password' => Hash::make('password'),
-        ]);
-        $petugasUser->assignRole($petugasRole);
+        $agenRole->syncPermissions([]); // belum ada permission default
+        $pelangganRole->syncPermissions([]); // belum ada permission default
+
+        // Buat user superadmin jika belum ada
+        if (!User::where('username', 'superadmin')->exists()) {
+            $superAdminUser = User::create([
+                'name' => 'Super Admin',
+                'username' => 'superadmin',
+                'email' => 'superadmin@ferry.com',
+                'password' => Hash::make('password'), // Ganti dengan password aman di production
+            ]);
+
+            $superAdminUser->assignRole($superAdminRole);
+        }
     }
 }

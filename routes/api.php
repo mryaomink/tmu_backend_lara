@@ -94,6 +94,17 @@ Route::prefix('v1')->group(function () {
         // Rute hanya untuk Super Admin
         Route::middleware('role:super admin')->group(function () {
             Route::apiResource('/users', UserController::class);
+            // Rute untuk mendapatkan semua permissions
+            Route::get('/permissions', [App\Http\Controllers\Api\V1\PermissionController::class, 'index']);
+            
+            // Rute untuk mendapatkan semua roles
+            Route::get('/roles', [App\Http\Controllers\Api\V1\RoleController::class, 'index']);
+            
+            // Rute untuk mendapatkan satu role beserta permission-nya
+            Route::get('/roles/{role}', [App\Http\Controllers\Api\V1\RoleController::class, 'show']);
+
+            // Rute untuk memperbarui permission milik sebuah role
+            Route::put('/roles/{role}/permissions', [App\Http\Controllers\Api\V1\RoleController::class, 'updatePermissions']);
         });
     });
 });
